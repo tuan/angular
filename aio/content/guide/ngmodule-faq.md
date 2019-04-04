@@ -71,7 +71,7 @@ as well as dynamically loaded in a pop-up dialog.
 This error often means that you haven't declared the directive "x"
 or haven't imported the NgModule to which "x" belongs.
 
-<div class="l-sub-section">
+<div class="alert is-helpful">
 
 Perhaps you declared "x" in an application sub-module but forgot to export it.
 The "x" class isn't visible to other modules until you add it to the `exports` list.
@@ -95,7 +95,7 @@ if your components have `[(ngModel)]` two-way binding expressions.
 Import _shared_ and _feature_ modules when this module's components incorporate their
 components, directives, and pipes.
 
-Import only [BrowserModule](guide/ngmodule-faq#q-browser-vs-common-module) in the root `AppModule`.
+Import [BrowserModule](guide/ngmodule-faq#q-browser-vs-common-module) only in the root `AppModule`.
 
 <hr/>
 
@@ -204,22 +204,20 @@ Apps pass a `Routes` object to `RouterModule.forRoot()` in order to configure th
 `RouterModule.forRoot()` returns a [ModuleWithProviders](api/core/ModuleWithProviders).
 You add that result to the `imports` list of the root `AppModule`.
 
-Only call and import a `.forRoot()` result in the root application module, `AppModule`.
-Importing it in any other module, particularly in a lazy-loaded module,
-is contrary to the intent and will likely produce a runtime error.
-For more information, see [Singleton Services](guide/singleton-services).
+Only call and import a `forRoot()` result in the root application module, `AppModule`.
+Avoid importing it in any other module, particularly in a lazy-loaded module. For more
+information on `forRoot()` see [the `forRoot()` pattern](guide/singleton-services#the-forroot-pattern) section of the [Singleton Services](guide/singleton-services) guide.
 
-For a service, instead of using `forRoot()`,  specify `providedIn: 'root'` on the service's `@Injectable()` decorator, which 
+For a service, instead of using `forRoot()`,  specify `providedIn: 'root'` on the service's `@Injectable()` decorator, which
 makes the service automatically available to the whole application and thus singleton by default.
 
-`RouterModule` also offers a `forChild` static method for configuring the routes of lazy-loaded modules.
+`RouterModule` also offers a `forChild()` static method for configuring the routes of lazy-loaded modules.
 
 `forRoot()` and `forChild()` are conventional names for methods that
 configure services in root and feature modules respectively.
 
-Angular doesn't recognize these names but Angular developers do.
 Follow this convention when you write similar modules with configurable service providers.
-<!--KW--I don't understand how Angular doesn't understand these methods...-->
+
 
 <hr/>
 
@@ -233,9 +231,8 @@ When you import an NgModule,
 Angular adds the module's service providers (the contents of its `providers` list)
 to the application root injector.
 
-This makes the provider visible to every class in the application that knows the provider's lookup token, or knows its name.
+This makes the provider visible to every class in the application that knows the provider's lookup token, or name.
 
-This is by design.
 Extensibility through NgModule imports is a primary goal of the NgModule system.
 Merging NgModule providers into the application injector
 makes it easy for a module library to enrich the entire application with new services.
@@ -246,6 +243,8 @@ to be visible only to the components declared by that feature module.
 If the `HeroModule` provides the `HeroService` and the root `AppModule` imports `HeroModule`,
 any class that knows the `HeroService` _type_ can inject that service,
 not just the classes declared in the `HeroModule`.
+
+To limit access to a service, consider lazy loading the NgModule that provides that service. See [How do I restrict service scope to a module?](guide/ngmodule-faq#service-scope) for more information.
 
 <hr/>
 
@@ -288,6 +287,7 @@ The `AppModule` always wins.
 
 <hr/>
 
+{@a service-scope}
 
 ## How do I restrict service scope to a module?
 
@@ -335,6 +335,8 @@ You can embed the child components in the top component's template.
 Alternatively, make the top component a routing host by giving it a `<router-outlet>`.
 Define child routes and let the router load module components into that outlet.
 
+Though you can limit access to a service by providing it in a lazy loaded module or providing it in a component, providing services in a component can lead to multiple instances of those services. Thus, the lazy loading is preferable.
+
 <hr/>
 
 {@a q-root-component-or-module}
@@ -380,7 +382,7 @@ This means that lazy-loaded modules can't reach them.
 
 Providers should be configured using `@Injectable` syntax. If possible, they should be provided in the application root (`providedIn: 'root'`). Services that are configured this way are lazily loaded if they are only used from a lazily loaded context.
 
-If it's the consumer's decision whether a provider is available application-wide or not, 
+If it's the consumer's decision whether a provider is available application-wide or not,
 then register providers in modules (`@NgModule.providers`) instead of registering in components (`@Component.providers`).
 
 Register a provider with a component when you _must_ limit the scope of a service instance
@@ -474,9 +476,9 @@ from the root app injector. If the injection succeeds, the class has been loaded
 You can throw an error or take other remedial action.
 
 Certain NgModules, such as `BrowserModule`, implement such a guard.
-Here is a custom constructor for an NgModule called `CoreModule`.
+Here is a custom constructor for an NgModule called `GreetingModule`.
 
-<code-example path="ngmodule-faq/src/app/core/core.module.ts" region="ctor" title="src/app/core/core.module.ts (Constructor)" linenums="false">
+<code-example path="ngmodules/src/app/greeting/greeting.module.ts" region="ctor" header="src/app/greeting/greeting.module.ts (Constructor)" linenums="false">
 </code-example>
 
 <hr/>
@@ -586,19 +588,6 @@ Nor should any of its imported or re-exported modules have `providers`.
 
 Import the `SharedModule` in your _feature_ modules,
 both those loaded when the app starts and those you lazy load later.
-
-### `CoreModule`
-`CoreModule` is a conventional name for an `NgModule` with `providers` for
-the singleton services you load when the application starts.
-
-Import `CoreModule` in the root `AppModule` only.
-Never import `CoreModule` in any other module.
-
-Consider making `CoreModule` a pure services module
-with no `declarations`.
-
-For more information, see [Sharing NgModules](guide/sharing-ngmodules)
-and [Singleton Services](guide/singleton-services).
 
 ### Feature Modules
 

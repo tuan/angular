@@ -8,12 +8,11 @@
 import {AnimationPlayer} from '@angular/animations';
 
 import {computeStyle} from '../../util';
-
+import {SpecialCasedStyles} from '../special_cased_styles';
 import {ElementAnimationStyleHandler} from './element_animation_style_handler';
 
 const DEFAULT_FILL_MODE = 'forwards';
 const DEFAULT_EASING = 'linear';
-const ANIMATION_END_EVENT = 'animationend';
 
 export const enum AnimatorControlState {INITIALIZED = 1, STARTED = 2, FINISHED = 3, DESTROYED = 4}
 
@@ -23,9 +22,11 @@ export class CssKeyframesPlayer implements AnimationPlayer {
   private _onDestroyFns: Function[] = [];
 
   private _started = false;
-  private _styler: ElementAnimationStyleHandler;
+  // TODO(issue/24571): remove '!'.
+  private _styler !: ElementAnimationStyleHandler;
 
-  public parentPlayer: AnimationPlayer;
+  // TODO(issue/24571): remove '!'.
+  public parentPlayer !: AnimationPlayer;
   public readonly totalTime: number;
   public readonly easing: string;
   public currentSnapshot: {[key: string]: string} = {};
@@ -36,7 +37,8 @@ export class CssKeyframesPlayer implements AnimationPlayer {
       public readonly element: any, public readonly keyframes: {[key: string]: string | number}[],
       public readonly animationName: string, private readonly _duration: number,
       private readonly _delay: number, easing: string,
-      private readonly _finalStyles: {[key: string]: any}) {
+      private readonly _finalStyles: {[key: string]: any},
+      private readonly _specialStyles?: SpecialCasedStyles|null) {
     this.easing = easing || DEFAULT_EASING;
     this.totalTime = _duration + _delay;
     this._buildStyler();
@@ -55,6 +57,9 @@ export class CssKeyframesPlayer implements AnimationPlayer {
     this._styler.destroy();
     this._flushStartFns();
     this._flushDoneFns();
+    if (this._specialStyles) {
+      this._specialStyles.destroy();
+    }
     this._onDestroyFns.forEach(fn => fn());
     this._onDestroyFns = [];
   }
@@ -75,6 +80,9 @@ export class CssKeyframesPlayer implements AnimationPlayer {
     this._state = AnimatorControlState.FINISHED;
     this._styler.finish();
     this._flushStartFns();
+    if (this._specialStyles) {
+      this._specialStyles.finish();
+    }
     this._flushDoneFns();
   }
 
@@ -98,6 +106,9 @@ export class CssKeyframesPlayer implements AnimationPlayer {
     if (!this.hasStarted()) {
       this._flushStartFns();
       this._state = AnimatorControlState.STARTED;
+      if (this._specialStyles) {
+        this._specialStyles.start();
+      }
     }
     this._styler.resume();
   }
@@ -122,7 +133,7 @@ export class CssKeyframesPlayer implements AnimationPlayer {
         DEFAULT_FILL_MODE, () => this.finish());
   }
 
-  /* @internal */
+  /** @internal */
   triggerCallback(phaseName: string): void {
     const methods = phaseName == 'start' ? this._onStartFns : this._onDoneFns;
     methods.forEach(fn => fn());

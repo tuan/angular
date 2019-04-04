@@ -21,7 +21,7 @@ const DEFAULT_NAVIGATION_URLS = [
 /**
  * Consumes service worker configuration files and processes them into control files.
  *
- * @experimental
+ * @publicApi
  */
 export class Generator {
   constructor(readonly fs: Filesystem, private baseHref: string) {}
@@ -32,6 +32,7 @@ export class Generator {
 
     return {
       configVersion: 1,
+      timestamp: Date.now(),
       appData: config.appData,
       index: joinUrls(this.baseHref, config.index), assetGroups,
       dataGroups: this.processDataGroups(config),
@@ -44,6 +45,13 @@ export class Generator {
       Promise<Object[]> {
     const seenMap = new Set<string>();
     return Promise.all((config.assetGroups || []).map(async(group) => {
+      if (group.resources.versionedFiles) {
+        console.warn(
+            `Asset-group '${group.name}' in 'ngsw-config.json' uses the 'versionedFiles' option.\n` +
+            'As of v6 \'versionedFiles\' and \'files\' options have the same behavior. ' +
+            'Use \'files\' instead.');
+      }
+
       const fileMatcher = globListToMatcher(group.resources.files || []);
       const versionedMatcher = globListToMatcher(group.resources.versionedFiles || []);
 
@@ -68,7 +76,7 @@ export class Generator {
         installMode: group.installMode || 'prefetch',
         updateMode: group.updateMode || group.installMode || 'prefetch',
         urls: matchedFiles.map(url => joinUrls(this.baseHref, url)),
-        patterns: (group.resources.urls || []).map(url => urlToRegex(url, this.baseHref)),
+        patterns: (group.resources.urls || []).map(url => urlToRegex(url, this.baseHref, true)),
       };
     }));
   }
@@ -77,7 +85,7 @@ export class Generator {
     return (config.dataGroups || []).map(group => {
       return {
         name: group.name,
-        patterns: group.urls.map(url => urlToRegex(url, this.baseHref)),
+        patterns: group.urls.map(url => urlToRegex(url, this.baseHref, true)),
         strategy: group.cacheConfig.strategy || 'performance',
         maxSize: group.cacheConfig.maxSize,
         maxAge: parseDurationToMs(group.cacheConfig.maxAge),
@@ -125,12 +133,12 @@ function matches(file: string, patterns: {positive: boolean, regex: RegExp}[]): 
   return res;
 }
 
-function urlToRegex(url: string, baseHref: string): string {
+function urlToRegex(url: string, baseHref: string, literalQuestionMark?: boolean): string {
   if (!url.startsWith('/') && url.indexOf('://') === -1) {
     url = joinUrls(baseHref, url);
   }
 
-  return globToRegex(url);
+  return globToRegex(url, literalQuestionMark);
 }
 
 function joinUrls(a: string, b: string): string {

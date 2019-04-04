@@ -591,6 +591,11 @@ function readBazelWrittenFilesFrom(
   }
   try {
     processDirectory(bazelPackageRoot, path.join('/node_modules/@angular', packageName));
+    // todo: check why we always need an index.d.ts
+    if (fs.existsSync(path.join(bazelPackageRoot, `${packageName}.d.ts`))) {
+      const content = fs.readFileSync(path.join(bazelPackageRoot, `${packageName}.d.ts`), 'utf8');
+      map.set(path.join('/node_modules/@angular', packageName, 'index.d.ts'), content);
+    }
   } catch (e) {
     console.error(
         `Consider adding //packages/${packageName} as a data dependency in the BUILD.bazel rule for the failing test`);
@@ -602,12 +607,16 @@ export function isInBazel(): boolean {
   return process.env.TEST_SRCDIR != null;
 }
 
-export function setup(
-    options: {compileAngular: boolean, compileAnimations: boolean, compileCommon?: boolean} = {
-      compileAngular: true,
-      compileAnimations: true,
-      compileCommon: false,
-    }) {
+export function setup(options: {
+  compileAngular: boolean,
+  compileFakeCore?: boolean,
+  compileAnimations: boolean, compileCommon?: boolean
+} = {
+  compileAngular: true,
+  compileAnimations: true,
+  compileCommon: false,
+  compileFakeCore: false,
+}) {
   let angularFiles = new Map<string, string>();
 
   beforeAll(() => {
@@ -625,6 +634,11 @@ export function setup(
         readBazelWrittenFilesFrom(
             path.join(sources, 'angular/packages/core/npm_package'), 'core', angularFiles,
             skipDirs);
+      }
+      if (options.compileFakeCore) {
+        readBazelWrittenFilesFrom(
+            path.join(sources, 'angular/packages/compiler-cli/test/ngtsc/fake_core/npm_package'),
+            'core', angularFiles, skipDirs);
       }
       if (options.compileAnimations) {
         // If this fails please add //packages/animations:npm_package as a test data dependency.

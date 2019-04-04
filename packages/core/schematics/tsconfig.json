@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "lib": ["es2015"],
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "@angular/compiler": ["../../compiler"],
+      "@angular/compiler/*": ["../../compiler/*"]
+    }
+  },
+  "bazelOptions": {
+    "suppressTsconfigOverrideWarnings": true
+  }
+}

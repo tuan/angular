@@ -20,7 +20,7 @@ function createDiv() {
 {
   describe('Animation', () => {
     // these tests are only mean't to be run within the DOM (for now)
-    if (typeof Element == 'undefined') return;
+    if (isNode) return;
 
     let rootElement: any;
     let subElement1: any;
@@ -378,6 +378,40 @@ function createDiv() {
             {width: '200px', offset: 1},
           ]);
           expect(finalPlayer.delay).toEqual(1500);
+        });
+
+        it('should allow a float-based delay value to be used', () => {
+          let steps: any[] = [
+            animate('.75s 0.75s', style({width: '300px'})),
+          ];
+
+          let players = invokeAnimationSequence(rootElement, steps);
+          expect(players.length).toEqual(1);
+
+          let p1 = players.pop() !;
+          expect(p1.duration).toEqual(1500);
+          expect(p1.keyframes).toEqual([
+            {width: '*', offset: 0},
+            {width: '*', offset: 0.5},
+            {width: '300px', offset: 1},
+          ]);
+
+
+          steps = [
+            style({width: '100px'}),
+            animate('.5s .5s', style({width: '200px'})),
+          ];
+
+          players = invokeAnimationSequence(rootElement, steps);
+          expect(players.length).toEqual(1);
+
+          p1 = players.pop() !;
+          expect(p1.duration).toEqual(1000);
+          expect(p1.keyframes).toEqual([
+            {width: '100px', offset: 0},
+            {width: '100px', offset: 0.5},
+            {width: '200px', offset: 1},
+          ]);
         });
       });
 

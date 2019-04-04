@@ -100,9 +100,10 @@ export class DocViewerComponent implements OnDestroy {
     if (needsToc && !embeddedToc) {
       // Add an embedded ToC if it's needed and there isn't one in the content already.
       titleEl!.insertAdjacentHTML('afterend', '<aio-toc class="embedded"></aio-toc>');
-    } else if (!needsToc && embeddedToc) {
+    } else if (!needsToc && embeddedToc && embeddedToc.parentNode !== null) {
       // Remove the embedded Toc if it's there and not needed.
-      embeddedToc.remove();
+      // We cannot use ChildNode.remove() because of IE11
+      embeddedToc.parentNode.removeChild(embeddedToc);
     }
 
     return () => {
@@ -136,7 +137,7 @@ export class DocViewerComponent implements OnDestroy {
         //           and is considered to be safe.
         tap(() => this.nextViewContainer.innerHTML = doc.contents || ''),
         tap(() => addTitleAndToc = this.prepareTitleAndToc(this.nextViewContainer, doc.id)),
-        switchMap(() => this.elementsLoader.loadContainingCustomElements(this.nextViewContainer)),
+        switchMap(() => this.elementsLoader.loadContainedCustomElements(this.nextViewContainer)),
         tap(() => this.docReady.emit()),
         switchMap(() => this.swapViews(addTitleAndToc)),
         tap(() => this.docRendered.emit()),

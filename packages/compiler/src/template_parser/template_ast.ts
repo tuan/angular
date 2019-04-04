@@ -58,7 +58,7 @@ export class AttrAst implements TemplateAst {
   visit(visitor: TemplateAstVisitor, context: any): any { return visitor.visitAttr(this, context); }
 }
 
-export enum PropertyBindingType {
+export const enum PropertyBindingType {
   // A normal binding to a property (e.g. `[property]="expression"`).
   Property,
   // A binding to an element attribute (e.g. `[attr.name]="expression"`).
@@ -114,7 +114,8 @@ export class BoundEventAst implements TemplateAst {
 
   constructor(
       public name: string, public target: string|null, public phase: string|null,
-      public handler: AST, public sourceSpan: ParseSourceSpan) {
+      public handler: AST, public sourceSpan: ParseSourceSpan,
+      public handlerSpan: ParseSourceSpan) {
     this.fullName = BoundEventAst.calcFullName(this.name, this.target, this.phase);
     this.isAnimation = !!this.phase;
   }
@@ -134,7 +135,8 @@ export class BoundEventAst implements TemplateAst {
     const target: string|null = event.type === ParsedEventType.Regular ? event.targetOrPhase : null;
     const phase: string|null =
         event.type === ParsedEventType.Animation ? event.targetOrPhase : null;
-    return new BoundEventAst(event.name, target, phase, event.handler, event.sourceSpan);
+    return new BoundEventAst(
+        event.name, target, phase, event.handler, event.sourceSpan, event.handlerSpan);
   }
 
   visit(visitor: TemplateAstVisitor, context: any): any {

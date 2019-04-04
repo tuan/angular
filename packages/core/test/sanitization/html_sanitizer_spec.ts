@@ -85,18 +85,48 @@ import {_sanitizeHtml} from '../../src/sanitization/html_sanitizer';
           .toEqual('<p alt="% &amp; &#34; !">Hello</p>');  // NB: quote encoded as ASCII &#34;.
     });
 
-    describe('should strip dangerous elements', () => {
+    describe('should strip dangerous elements (but potentially traverse their content)', () => {
       const dangerousTags = [
-        'frameset', 'form', 'param', 'object', 'embed', 'textarea', 'input', 'button', 'option',
-        'select', 'script', 'style', 'link', 'base', 'basefont'
+        'form',
+        'object',
+        'textarea',
+        'button',
+        'option',
+        'select',
       ];
-
       for (const tag of dangerousTags) {
-        it(`${tag}`,
+        it(tag,
            () => { expect(_sanitizeHtml(defaultDoc, `<${tag}>evil!</${tag}>`)).toEqual('evil!'); });
       }
 
-      it(`swallows frame entirely`, () => {
+      const dangerousSelfClosingTags = [
+        'base',
+        'basefont',
+        'embed',
+        'frameset',
+        'input',
+        'link',
+        'param',
+      ];
+      for (const tag of dangerousSelfClosingTags) {
+        it(tag, () => {
+          expect(_sanitizeHtml(defaultDoc, `before<${tag}>After`)).toEqual('beforeAfter');
+        });
+      }
+
+      const dangerousSkipContentTags = [
+        'script',
+        'style',
+        'template',
+      ];
+      for (const tag of dangerousSkipContentTags) {
+        it(tag, () => { expect(_sanitizeHtml(defaultDoc, `<${tag}>evil!</${tag}>`)).toEqual(''); });
+      }
+
+      it(`frame`, () => {
+        // `<frame>` is special, because different browsers treat it differently (e.g. remove it
+        // altogether). // We just verify that (one way or another), there is no `<frame>` element
+        // after sanitization.
         expect(_sanitizeHtml(defaultDoc, `<frame>evil!</frame>`)).not.toContain('<frame>');
       });
     });
@@ -109,6 +139,21 @@ import {_sanitizeHtml} from '../../src/sanitization/html_sanitizer';
           expect(_sanitizeHtml(defaultDoc, `<a ${attr}="x">evil!</a>`)).toEqual('<a>evil!</a>');
         });
       }
+    });
+
+    it('ignores content of script elements', () => {
+      expect(_sanitizeHtml(defaultDoc, '<script>var foo="<p>bar</p>"</script>')).toEqual('');
+      expect(_sanitizeHtml(defaultDoc, '<script>var foo="<p>bar</p>"</script><div>hi</div>'))
+          .toEqual('<div>hi</div>');
+      expect(_sanitizeHtml(defaultDoc, '<style>\<\!-- something--\>hi</style>')).toEqual('');
+    });
+
+    it('ignores content of style elements', () => {
+      expect(_sanitizeHtml(defaultDoc, '<style><!-- foobar --></style><div>hi</div>'))
+          .toEqual('<div>hi</div>');
+      expect(_sanitizeHtml(defaultDoc, '<style><!-- foobar --></style>')).toEqual('');
+      expect(_sanitizeHtml(defaultDoc, '<style>\<\!-- something--\>hi</style>')).toEqual('');
+      expect(logMsgs.join('\n')).toMatch(/sanitizing HTML stripped some content/);
     });
 
     it('should not enter an infinite loop on clobbered elements', () => {
@@ -154,9 +199,9 @@ import {_sanitizeHtml} from '../../src/sanitization/html_sanitizer';
              .toEqual(
                  isDOMParserAvailable() ?
                      // PlatformBrowser output
-                     '<p>&lt;img src=&#34;<img src="x"></p>' :
+                     '<p><img src="x"></p>' :
                      // PlatformServer output
-                     '<p><img src="&lt;/style&gt;&lt;img src=x onerror=alert(1)//"></p>');
+                     '<p></p>');
        });
 
     if (browserDetection.isWebkit) {

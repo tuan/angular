@@ -6,11 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-
+import {DOCUMENT} from '@angular/common';
 import {TestBed} from '@angular/core/testing';
 import {BrowserModule, BrowserTransferStateModule, TransferState} from '@angular/platform-browser';
 import {StateKey, escapeHtml, makeStateKey, unescapeHtml} from '@angular/platform-browser/src/browser/transfer_state';
-import {DOCUMENT} from '@angular/platform-browser/src/dom/dom_tokens';
 
 (function() {
   function removeScriptTag(doc: Document, id: string) {
@@ -80,14 +79,14 @@ import {DOCUMENT} from '@angular/platform-browser/src/dom/dom_tokens';
     it('supports setting and accessing value \'false\' via get', () => {
       const transferState: TransferState = TestBed.get(TransferState);
       transferState.set(TEST_KEY, false);
-      expect(transferState.get(TEST_KEY, 20)).toBe(false);
+      expect(transferState.get(TEST_KEY, true)).toBe(false);
       expect(transferState.hasKey(TEST_KEY)).toBe(true);
     });
 
     it('supports setting and accessing value \'null\' via get', () => {
       const transferState: TransferState = TestBed.get(TransferState);
       transferState.set(TEST_KEY, null);
-      expect(transferState.get(TEST_KEY, 20)).toBe(null);
+      expect(transferState.get(TEST_KEY, 20 as any)).toBe(null);
       expect(transferState.hasKey(TEST_KEY)).toBe(true);
     });
 

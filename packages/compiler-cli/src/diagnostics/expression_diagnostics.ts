@@ -185,7 +185,8 @@ export function getExpressionScope(
 
 class ExpressionDiagnosticsVisitor extends RecursiveTemplateAstVisitor {
   private path: TemplateAstPath;
-  private directiveSummary: CompileDirectiveSummary;
+  // TODO(issue/24571): remove '!'.
+  private directiveSummary !: CompileDirectiveSummary;
 
   diagnostics: ExpressionDiagnostic[] = [];
 
@@ -271,8 +272,7 @@ class ExpressionDiagnosticsVisitor extends RecursiveTemplateAstVisitor {
     const path = findNode(this.info.htmlAst, ast.sourceSpan.start.offset);
     const last = path.tail;
     if (last instanceof Attribute && last.valueSpan) {
-      // Add 1 for the quote.
-      return last.valueSpan.start.offset + 1;
+      return last.valueSpan.start.offset;
     }
     return ast.sourceSpan.start.offset;
   }

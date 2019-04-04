@@ -7,13 +7,15 @@
  */
 
 import {NgModuleRef} from '@angular/core';
-import {InjectableDef, defineInjectable} from '@angular/core/src/di/defs';
-import {INJECTOR, InjectFlags, Injector, inject} from '@angular/core/src/di/injector';
-import {makePropDecorator} from '@angular/core/src/util/decorators';
+import {InjectFlags, inject} from '@angular/core/src/di';
+import {INJECTOR, Injector} from '@angular/core/src/di/injector';
+import {InjectableDef, defineInjectable} from '@angular/core/src/di/interface/defs';
 import {NgModuleDefinition, NgModuleProviderDef, NodeFlags} from '@angular/core/src/view';
-import {moduleDef, moduleProvideDef, resolveNgModuleDep} from '@angular/core/src/view/ng_module';
+import {moduleDef} from '@angular/core/src/view/ng_module';
 import {createNgModuleRef} from '@angular/core/src/view/refs';
 import {tokenKey} from '@angular/core/src/view/util';
+
+import {APP_ROOT} from '../../src/di/scope';
 
 class Foo {}
 
@@ -80,11 +82,14 @@ class FromChildWithOptionalDep {
 }
 
 class FromChildWithSkipSelfDep {
-  constructor(public depFromParent: ChildDep|null, public depFromChild: Bar|null) {}
+  constructor(
+      public skipSelfChildDep: ChildDep|null, public selfChildDep: ChildDep|null,
+      public optionalSelfBar: Bar|null) {}
   static ngInjectableDef: InjectableDef<FromChildWithSkipSelfDep> = defineInjectable({
     factory: () => new FromChildWithSkipSelfDep(
                  inject(ChildDep, InjectFlags.SkipSelf|InjectFlags.Optional),
-                 inject(Bar, InjectFlags.Self|InjectFlags.Optional)),
+                 inject(ChildDep, InjectFlags.Self),
+                 inject(Bar, InjectFlags.Self|InjectFlags.Optional), ),
     providedIn: MyChildModule,
   });
 }
@@ -162,8 +167,9 @@ describe('NgModuleRef_ injector', () => {
   it('injects skip-self and self deps across injectors properly', () => {
     const instance = childRef.injector.get(FromChildWithSkipSelfDep);
     expect(instance instanceof FromChildWithSkipSelfDep).toBeTruthy();
-    expect(instance.depFromParent).toBeNull();
-    expect(instance.depFromChild instanceof Bar).toBeTruthy();
+    expect(instance.skipSelfChildDep).toBeNull();
+    expect(instance.selfChildDep instanceof ChildDep).toBeTruthy();
+    expect(instance.optionalSelfBar).toBeNull();
   });
 
   it('does not inject something not scoped to the module',
@@ -224,5 +230,30 @@ describe('NgModuleRef_ injector', () => {
     expect(Service.destroyed).toBe(0);
     ref.destroy();
     expect(Service.destroyed).toBe(1);
+  });
+
+  describe('moduleDef', () => {
+    function createProvider(token: any, value: any) {
+      return {
+        index: 0,
+        flags: NodeFlags.TypeValueProvider | NodeFlags.LazyProvider,
+        deps: [], token, value
+      };
+    }
+
+    it('sets isRoot to `true` when APP_ROOT is `true`', () => {
+      const def = moduleDef([createProvider(APP_ROOT, true)]);
+      expect(def.isRoot).toBe(true);
+    });
+
+    it('sets isRoot to `false` when APP_ROOT is absent', () => {
+      const def = moduleDef([]);
+      expect(def.isRoot).toBe(false);
+    });
+
+    it('sets isRoot to `false` when APP_ROOT is `false`', () => {
+      const def = moduleDef([createProvider(APP_ROOT, false)]);
+      expect(def.isRoot).toBe(false);
+    });
   });
 });

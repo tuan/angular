@@ -69,7 +69,7 @@ export class AppComponent implements OnInit {
   topMenuNodes: NavigationNode[];
   topMenuNarrowNodes: NavigationNode[];
 
-  hasFloatingToc = true;
+  hasFloatingToc = false;
   private showFloatingToc = new BehaviorSubject(false);
   private showFloatingTocWidth = 800;
   tocMaxHeight: string;
@@ -127,7 +127,7 @@ export class AppComponent implements OnInit {
       }
       if (path === this.currentPath) {
         // scroll only if on same page (most likely a change to the hash)
-        this.autoScroll();
+        this.scrollService.scroll();
       } else {
         // don't scroll; leave that to `onDocRendered`
         this.currentPath = path;
@@ -187,11 +187,6 @@ export class AppComponent implements OnInit {
       .subscribe(() => this.updateShell());
   }
 
-  // Scroll to the anchor in the hash fragment or top of doc.
-  autoScroll() {
-    this.scrollService.scroll();
-  }
-
   onDocReady() {
     // About to transition to new view.
     this.isTransitioning = true;
@@ -204,9 +199,7 @@ export class AppComponent implements OnInit {
   }
 
   onDocRemoved() {
-    // The previous document has been removed.
-    // Scroll to top to restore a clean visual state for the new document.
-    this.scrollService.scrollToTop();
+    this.scrollService.removeStoredScrollPosition();
   }
 
   onDocInserted() {
@@ -216,9 +209,8 @@ export class AppComponent implements OnInit {
     // (e.g. sidenav, host classes) needs to happen asynchronously.
     setTimeout(() => this.updateShell());
 
-    // Scroll 500ms after the new document has been inserted into the doc-viewer.
-    // The delay is to allow time for async layout to complete.
-    setTimeout(() => this.autoScroll(), 500);
+    // Scroll the good position depending on the context
+    this.scrollService.scrollAfterRender(500);
   }
 
   onDocRendered() {
@@ -242,7 +234,7 @@ export class AppComponent implements OnInit {
 
   @HostListener('window:resize', ['$event.target.innerWidth'])
   onResize(width: number) {
-    this.isSideBySide = width > this.sideBySideWidth;
+    this.isSideBySide = width >= this.sideBySideWidth;
     this.showFloatingToc.next(width > this.showFloatingTocWidth);
 
     if (this.isSideBySide && !this.isSideNavDoc) {
@@ -256,7 +248,6 @@ export class AppComponent implements OnInit {
 
   @HostListener('click', ['$event.target', '$event.button', '$event.ctrlKey', '$event.metaKey', '$event.altKey'])
   onClick(eventTarget: HTMLElement, button: number, ctrlKey: boolean, metaKey: boolean, altKey: boolean): boolean {
-
     // Hide the search results if we clicked outside both the "search box" and the "search results"
     if (!this.searchElements.some(element => element.nativeElement.contains(eventTarget))) {
       this.hideSearchResults();
@@ -349,12 +340,17 @@ export class AppComponent implements OnInit {
   @HostListener('window:scroll')
   onScroll() {
     if (!this.tocMaxHeightOffset) {
-      // Must wait until now for mat-toolbar to be measurable.
+      // Must wait until `mat-toolbar` is measurable.
       const el = this.hostElement.nativeElement as Element;
-      this.tocMaxHeightOffset =
-          el.querySelector('footer')!.clientHeight +
-          el.querySelector('.app-toolbar')!.clientHeight +
-          24; //  fudge margin
+      const headerEl = el.querySelector('.app-toolbar');
+      const footerEl = el.querySelector('footer');
+
+      if (headerEl && footerEl) {
+        this.tocMaxHeightOffset =
+            headerEl.clientHeight +
+            footerEl.clientHeight +
+            24; //  fudge margin
+      }
     }
 
     this.tocMaxHeight = (document.body.scrollHeight - window.pageYOffset - this.tocMaxHeightOffset).toFixed(2);
@@ -384,6 +380,10 @@ export class AppComponent implements OnInit {
 
   hideSearchResults() {
     this.showSearchResults = false;
+    const oldSearch = this.locationService.search();
+    if (oldSearch.search !== undefined) {
+      this.locationService.setSearch('', { ...oldSearch, search: undefined });
+    }
   }
 
   focusSearchBox() {

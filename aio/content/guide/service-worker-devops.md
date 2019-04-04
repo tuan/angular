@@ -55,7 +55,7 @@ gets the correct content.
 
 To ensure resource integrity, the Angular service worker validates
 the hashes of all resources for which it has a hash. Typically for
-a CLI app, this is everything in the `dist` directory covered by
+an app created with the [Angular CLI](cli), this is everything in the `dist` directory covered by
 the user's `src/ngsw-config.json` configuration.
 
 If a particular file fails validation, the Angular service worker
@@ -301,7 +301,7 @@ an administrator ever needs to deactivate the service worker quickly.
 ### Fail-safe
 
 To deactivate the service worker, remove or rename the
-`ngsw-config.json` file. When the service worker's request
+`ngsw.json` file. When the service worker's request
 for `ngsw.json` returns a `404`, then the service worker
 removes all of its caches and de-registers itself,
 essentially self-destructing.

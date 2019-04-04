@@ -60,10 +60,12 @@ export class TranslationBundle {
 }
 
 class I18nToHtmlVisitor implements i18n.Visitor {
-  private _srcMsg: i18n.Message;
+  // TODO(issue/24571): remove '!'.
+  private _srcMsg !: i18n.Message;
   private _contextStack: {msg: i18n.Message, mapper: (name: string) => string}[] = [];
   private _errors: I18nError[] = [];
-  private _mapper: (name: string) => string;
+  // TODO(issue/24571): remove '!'.
+  private _mapper !: (name: string) => string;
 
   constructor(
       private _i18nNodesByMsgId: {[msgId: string]: i18n.Node[]} = {}, private _locale: string|null,
@@ -81,7 +83,7 @@ class I18nToHtmlVisitor implements i18n.Visitor {
 
     // text to html
     const url = srcMsg.nodes[0].sourceSpan.start.file.url;
-    const html = new HtmlParser().parse(text, url, true);
+    const html = new HtmlParser().parse(text, url, {tokenizeExpansionForms: true});
 
     return {
       nodes: html.rootNodes,

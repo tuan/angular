@@ -6,12 +6,11 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {AotSummaryResolver, CompileMetadataResolver, CompilePipeSummary, CompilerConfig, DEFAULT_INTERPOLATION_CONFIG, DirectiveNormalizer, DirectiveResolver, DomElementSchemaRegistry, HtmlParser, InterpolationConfig, NgAnalyzedModules, NgModuleResolver, ParseTreeResult, PipeResolver, ResourceLoader, StaticReflector, StaticSymbol, StaticSymbolCache, StaticSymbolResolver, SummaryResolver} from '@angular/compiler';
-import * as fs from 'fs';
+import {CompilePipeSummary, StaticSymbol} from '@angular/compiler';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {BuiltinType, DeclarationKind, Definition, PipeInfo, Pipes, Signature, Span, Symbol, SymbolDeclaration, SymbolQuery, SymbolTable} from './symbols';
+import {BuiltinType, DeclarationKind, Definition, Signature, Span, Symbol, SymbolDeclaration, SymbolQuery, SymbolTable} from './symbols';
 import {isVersionBetween} from './typescript_version';
 
 // In TypeScript 2.1 these flags moved
@@ -84,7 +83,8 @@ export function getPipesTable(
 
 class TypeScriptSymbolQuery implements SymbolQuery {
   private typeCache = new Map<BuiltinType, Symbol>();
-  private pipesCache: SymbolTable;
+  // TODO(issue/24571): remove '!'.
+  private pipesCache !: SymbolTable;
 
   constructor(
       private program: ts.Program, private checker: ts.TypeChecker, private source: ts.SourceFile,
@@ -283,8 +283,10 @@ class TypeWrapper implements Symbol {
 
 class SymbolWrapper implements Symbol {
   private symbol: ts.Symbol;
-  private _tsType: ts.Type;
-  private _members: SymbolTable;
+  // TODO(issue/24571): remove '!'.
+  private _tsType !: ts.Type;
+  // TODO(issue/24571): remove '!'.
+  private _members !: SymbolTable;
 
   public readonly nullable: boolean = false;
   public readonly language: string = 'typescript';
@@ -529,7 +531,8 @@ class PipesTable implements SymbolTable {
 const INDEX_PATTERN = /[\\/]([^\\/]+)[\\/]\1\.d\.ts$/;
 
 class PipeSymbol implements Symbol {
-  private _tsType: ts.Type;
+  // TODO(issue/24571): remove '!'.
+  private _tsType !: ts.Type;
   public readonly kind: DeclarationKind = 'pipe';
   public readonly language: string = 'typescript';
   public readonly container: Symbol|undefined = undefined;
@@ -643,50 +646,6 @@ class EmptyTable implements SymbolTable {
   static instance = new EmptyTable();
 }
 
-function findTsConfig(fileName: string): string|undefined {
-  let dir = path.dirname(fileName);
-  while (fs.existsSync(dir)) {
-    const candidate = path.join(dir, 'tsconfig.json');
-    if (fs.existsSync(candidate)) return candidate;
-    const parentDir = path.dirname(dir);
-    if (parentDir === dir) break;
-    dir = parentDir;
-  }
-}
-
-function isBindingPattern(node: ts.Node): node is ts.BindingPattern {
-  return !!node && (node.kind === ts.SyntaxKind.ArrayBindingPattern ||
-                    node.kind === ts.SyntaxKind.ObjectBindingPattern);
-}
-
-function walkUpBindingElementsAndPatterns(node: ts.Node): ts.Node {
-  while (node && (node.kind === ts.SyntaxKind.BindingElement || isBindingPattern(node))) {
-    node = node.parent !;
-  }
-
-  return node;
-}
-
-function getCombinedNodeFlags(node: ts.Node): ts.NodeFlags {
-  node = walkUpBindingElementsAndPatterns(node);
-
-  let flags = node.flags;
-  if (node.kind === ts.SyntaxKind.VariableDeclaration) {
-    node = node.parent !;
-  }
-
-  if (node && node.kind === ts.SyntaxKind.VariableDeclarationList) {
-    flags |= node.flags;
-    node = node.parent !;
-  }
-
-  if (node && node.kind === ts.SyntaxKind.VariableStatement) {
-    flags |= node.flags;
-  }
-
-  return flags;
-}
-
 function isSymbolPrivate(s: ts.Symbol): boolean {
   return !!s.valueDeclaration && isPrivate(s.valueDeclaration);
 }
@@ -714,13 +673,20 @@ function getBuiltinTypeFromTs(kind: BuiltinType, context: TypeContext): ts.Type 
           checker.getTypeAtLocation(setParents(<ts.Node>{kind: ts.SyntaxKind.NullKeyword}, node));
       break;
     case BuiltinType.Number:
-      const numeric = <ts.Node>{kind: ts.SyntaxKind.NumericLiteral};
+      const numeric = <ts.LiteralLikeNode>{
+        kind: ts.SyntaxKind.NumericLiteral,
+        text: node.getText(),
+      };
       setParents(<any>{kind: ts.SyntaxKind.ExpressionStatement, expression: numeric}, node);
       type = checker.getTypeAtLocation(numeric);
       break;
     case BuiltinType.String:
-      type = checker.getTypeAtLocation(
-          setParents(<ts.Node>{kind: ts.SyntaxKind.NoSubstitutionTemplateLiteral}, node));
+      type = checker.getTypeAtLocation(setParents(
+          <ts.LiteralLikeNode>{
+            kind: ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+            text: node.getText(),
+          },
+          node));
       break;
     case BuiltinType.Undefined:
       type = checker.getTypeAtLocation(setParents(
@@ -740,15 +706,6 @@ function setParents<T extends ts.Node>(node: T, parent: ts.Node): T {
   node.parent = parent;
   ts.forEachChild(node, child => setParents(child, node));
   return node;
-}
-
-function spanOf(node: ts.Node): Span {
-  return {start: node.getStart(), end: node.getEnd()};
-}
-
-function shrink(span: Span, offset?: number) {
-  if (offset == null) offset = 1;
-  return {start: span.start + offset, end: span.end - offset};
 }
 
 function spanAt(sourceFile: ts.SourceFile, line: number, column: number): Span|undefined {
@@ -851,8 +808,6 @@ function typeKindOf(type: ts.Type | undefined): BuiltinType {
   }
   return BuiltinType.Other;
 }
-
-
 
 function getFromSymbolTable(symbolTable: ts.SymbolTable, key: string): ts.Symbol|undefined {
   const table = symbolTable as any;

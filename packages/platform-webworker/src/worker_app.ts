@@ -6,9 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {CommonModule, ɵPLATFORM_WORKER_APP_ID as PLATFORM_WORKER_APP_ID} from '@angular/common';
-import {APP_INITIALIZER, ApplicationModule, ErrorHandler, NgModule, NgZone, PLATFORM_ID, PlatformRef, RendererFactory2, RootRenderer, StaticProvider, createPlatformFactory, platformCore} from '@angular/core';
-import {DOCUMENT, ɵBROWSER_SANITIZATION_PROVIDERS as BROWSER_SANITIZATION_PROVIDERS} from '@angular/platform-browser';
+import {CommonModule, DOCUMENT, ViewportScroller, ɵNullViewportScroller as NullViewportScroller, ɵPLATFORM_WORKER_APP_ID as PLATFORM_WORKER_APP_ID} from '@angular/common';
+import {APP_INITIALIZER, ApplicationModule, ErrorHandler, NgModule, NgZone, PLATFORM_ID, PlatformRef, RendererFactory2, RootRenderer, StaticProvider, createPlatformFactory, platformCore, ɵAPP_ROOT as APP_ROOT} from '@angular/core';
+import {ɵBROWSER_SANITIZATION_PROVIDERS as BROWSER_SANITIZATION_PROVIDERS} from '@angular/platform-browser';
 
 import {ON_WEB_WORKER} from './web_workers/shared/api';
 import {ClientMessageBrokerFactory} from './web_workers/shared/client_message_broker';
@@ -23,7 +23,7 @@ import {WorkerDomAdapter} from './web_workers/worker/worker_adapter';
 
 
 /**
- * @experimental
+ * @publicApi
  */
 export const platformWorkerApp = createPlatformFactory(
     platformCore, 'workerApp', [{provide: PLATFORM_ID, useValue: PLATFORM_WORKER_APP_ID}]);
@@ -55,11 +55,12 @@ export function setupWebWorker(): void {
 /**
  * The ng module for the worker app side.
  *
- * @experimental
+ * @publicApi
  */
 @NgModule({
   providers: [
     BROWSER_SANITIZATION_PROVIDERS,
+    {provide: APP_ROOT, useValue: true},
     Serializer,
     {provide: DOCUMENT, useValue: null},
     ClientMessageBrokerFactory,
@@ -71,6 +72,7 @@ export function setupWebWorker(): void {
     {provide: ErrorHandler, useFactory: errorHandler, deps: []},
     {provide: MessageBus, useFactory: createMessageBus, deps: [NgZone]},
     {provide: APP_INITIALIZER, useValue: setupWebWorker, multi: true},
+    {provide: ViewportScroller, useClass: NullViewportScroller, deps: []},
   ],
   exports: [
     CommonModule,

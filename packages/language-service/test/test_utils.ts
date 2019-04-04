@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {isInBazel, setup} from '@angular/compiler-cli/test/test_support';
+import {setup} from '@angular/compiler-cli/test/test_support';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
@@ -65,7 +65,8 @@ missingCache.set('/node_modules/@angular/forms/src/directives/form_interface.met
 
 export class MockTypescriptHost implements ts.LanguageServiceHost {
   private angularPath: string|undefined;
-  private nodeModulesPath: string;
+  // TODO(issue/24571): remove '!'.
+  private nodeModulesPath !: string;
   private scriptVersion = new Map<string, number>();
   private overrides = new Map<string, string>();
   private projectVersion = 0;
@@ -75,20 +76,9 @@ export class MockTypescriptHost implements ts.LanguageServiceHost {
   constructor(
       private scriptNames: string[], private data: MockData,
       private node_modules: string = 'node_modules', private myPath: typeof path = path) {
-    const moduleFilename = module.filename.replace(/\\/g, '/');
-    if (isInBazel()) {
-      const support = setup();
-      this.nodeModulesPath = path.join(support.basePath, 'node_modules');
-      this.angularPath = path.join(this.nodeModulesPath, '@angular');
-    } else {
-      const angularIndex = moduleFilename.indexOf('@angular');
-      if (angularIndex >= 0)
-        this.angularPath =
-            moduleFilename.substr(0, angularIndex).replace('/all/', '/all/@angular/');
-      const distIndex = moduleFilename.indexOf('/dist/all');
-      if (distIndex >= 0)
-        this.nodeModulesPath = myPath.join(moduleFilename.substr(0, distIndex), 'node_modules');
-    }
+    const support = setup();
+    this.nodeModulesPath = path.join(support.basePath, 'node_modules');
+    this.angularPath = path.join(this.nodeModulesPath, '@angular');
     this.options = {
       target: ts.ScriptTarget.ES5,
       module: ts.ModuleKind.CommonJS,
@@ -161,6 +151,8 @@ export class MockTypescriptHost implements ts.LanguageServiceHost {
   }
 
   fileExists(fileName: string): boolean { return this.getRawFileContent(fileName) != null; }
+
+  readFile(path: string): string|undefined { return this.getRawFileContent(path); }
 
   getMarkerLocations(fileName: string): {[name: string]: number}|undefined {
     let content = this.getRawFileContent(fileName);

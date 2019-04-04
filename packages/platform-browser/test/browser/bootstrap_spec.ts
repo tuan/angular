@@ -6,18 +6,18 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {isPlatformBrowser} from '@angular/common';
+import {DOCUMENT, isPlatformBrowser} from '@angular/common';
 import {APP_INITIALIZER, CUSTOM_ELEMENTS_SCHEMA, Compiler, Component, Directive, ErrorHandler, Inject, Input, LOCALE_ID, NgModule, OnDestroy, PLATFORM_ID, PLATFORM_INITIALIZER, Pipe, Provider, StaticProvider, Type, VERSION, createPlatformFactory} from '@angular/core';
 import {ApplicationRef, destroyPlatform} from '@angular/core/src/application_ref';
 import {Console} from '@angular/core/src/console';
 import {ComponentRef} from '@angular/core/src/linker/component_factory';
 import {Testability, TestabilityRegistry} from '@angular/core/src/testability/testability';
-import {AsyncTestCompleter, Log, afterEach, beforeEach, beforeEachProviders, describe, iit, inject, it} from '@angular/core/testing/src/testing_internal';
+import {AsyncTestCompleter, Log, afterEach, beforeEach, beforeEachProviders, describe, inject, it} from '@angular/core/testing/src/testing_internal';
 import {BrowserModule} from '@angular/platform-browser';
 import {platformBrowserDynamic} from '@angular/platform-browser-dynamic';
 import {getDOM} from '@angular/platform-browser/src/dom/dom_adapter';
-import {DOCUMENT} from '@angular/platform-browser/src/dom/dom_tokens';
 import {expect} from '@angular/platform-browser/testing/src/matchers';
+import {ivyEnabled, modifiedInIvy, onlyInIvy} from '@angular/private/testing';
 
 @Component({selector: 'non-existent', template: ''})
 class NonExistentComp {
@@ -79,8 +79,9 @@ class HelloUrlCmp {
 
 @Directive({selector: '[someDir]', host: {'[title]': 'someDir'}})
 class SomeDirective {
+  // TODO(issue/24571): remove '!'.
   @Input()
-  someDir: string;
+  someDir !: string;
 }
 
 @Pipe({name: 'somePipe'})
@@ -158,17 +159,35 @@ function bootstrap(
 
     afterEach(destroyPlatform);
 
-    it('should throw if bootstrapped Directive is not a Component',
-       inject([AsyncTestCompleter], (done: AsyncTestCompleter) => {
-         const logger = new MockConsole();
-         const errorHandler = new ErrorHandler();
-         (errorHandler as any)._console = logger as any;
-         expect(
-             () => bootstrap(
-                 HelloRootDirectiveIsNotCmp, [{provide: ErrorHandler, useValue: errorHandler}]))
-             .toThrowError(`HelloRootDirectiveIsNotCmp cannot be used as an entry component.`);
-         done.done();
-       }));
+    // TODO(misko): can't use `modifiedInIvy.it` because the `it` is somehow special here.
+    modifiedInIvy('bootstrapping non-Component throws in View Engine').isEnabled &&
+        it('should throw if bootstrapped Directive is not a Component',
+           inject([AsyncTestCompleter], (done: AsyncTestCompleter) => {
+             const logger = new MockConsole();
+             const errorHandler = new ErrorHandler();
+             (errorHandler as any)._console = logger as any;
+             expect(
+                 () => bootstrap(
+                     HelloRootDirectiveIsNotCmp, [{provide: ErrorHandler, useValue: errorHandler}]))
+                 .toThrowError(`HelloRootDirectiveIsNotCmp cannot be used as an entry component.`);
+             done.done();
+           }));
+
+    // TODO(misko): can't use `onlyInIvy.it` because the `it` is somehow special here.
+    onlyInIvy('bootstrapping non-Component rejects Promise in Ivy').isEnabled &&
+        it('should throw if bootstrapped Directive is not a Component',
+           inject([AsyncTestCompleter], (async: AsyncTestCompleter) => {
+             const logger = new MockConsole();
+             const errorHandler = new ErrorHandler();
+             (errorHandler as any)._console = logger as any;
+             bootstrap(HelloRootDirectiveIsNotCmp, [
+               {provide: ErrorHandler, useValue: errorHandler}
+             ]).catch((error: Error) => {
+               expect(error).toEqual(
+                   new Error(`HelloRootDirectiveIsNotCmp cannot be used as an entry component.`));
+               async.done();
+             });
+           }));
 
     it('should throw if no element is found',
        inject([AsyncTestCompleter], (async: AsyncTestCompleter) => {
@@ -211,9 +230,18 @@ function bootstrap(
          bootstrap(RootCmp, [{provide: ErrorHandler, useValue: errorHandler}], [], [
            CustomModule
          ]).then(null, (e: Error) => {
-           expect(e.message).toContain(`StaticInjectorError(TestModule)[CustomCmp -> IDontExist]: 
-  StaticInjectorError(Platform: core)[CustomCmp -> IDontExist]: 
-    NullInjectorError: No provider for IDontExist!`);
+           let errorMsg: string;
+           if (ivyEnabled) {
+             errorMsg = `R3InjectorError(TestModule)[IDontExist]: \n` +
+                 '  StaticInjectorError(TestModule)[IDontExist]: \n' +
+                 '    StaticInjectorError(Platform: core)[IDontExist]: \n' +
+                 '      NullInjectorError: No provider for IDontExist!';
+           } else {
+             errorMsg = `StaticInjectorError(TestModule)[CustomCmp -> IDontExist]: \n` +
+                 '  StaticInjectorError(Platform: core)[CustomCmp -> IDontExist]: \n' +
+                 '    NullInjectorError: No provider for IDontExist!';
+           }
+           expect(e.message).toContain(errorMsg);
            async.done();
            return null;
          });
@@ -254,7 +282,7 @@ function bootstrap(
 
     it('should create an injector promise', () => {
       const refPromise = bootstrap(HelloRootCmp, testProviders);
-      expect(refPromise).not.toBe(null);
+      expect(refPromise).toEqual(jasmine.any(Promise));
     });
 
     it('should set platform name to browser',

@@ -3,31 +3,73 @@
     "name": "APP_ROOT"
   },
   {
-    "name": "CIRCULAR$1"
+    "name": "CIRCULAR"
   },
   {
-    "name": "EMPTY_ARRAY$1"
+    "name": "CIRCULAR"
   },
   {
-    "name": "GET_PROPERTY_NAME$1"
+    "name": "EMPTY"
   },
   {
-    "name": "INJECTOR$1"
+    "name": "EMPTY_ARRAY"
+  },
+  {
+    "name": "EmptyErrorImpl"
+  },
+  {
+    "name": "IDENT"
+  },
+  {
+    "name": "INJECTOR"
   },
   {
     "name": "Inject"
   },
   {
+    "name": "InjectFlags"
+  },
+  {
     "name": "InjectionToken"
+  },
+  {
+    "name": "Injector"
+  },
+  {
+    "name": "MULTI_PROVIDER_FN"
+  },
+  {
+    "name": "NEW_LINE"
+  },
+  {
+    "name": "NG_INJECTABLE_DEF"
+  },
+  {
+    "name": "NG_INJECTOR_DEF"
+  },
+  {
+    "name": "NG_TEMP_TOKEN_PATH"
+  },
+  {
+    "name": "NG_TOKEN_PATH"
   },
   {
     "name": "NOT_YET"
   },
   {
-    "name": "NULL_INJECTOR$1"
+    "name": "NO_NEW_LINE"
+  },
+  {
+    "name": "NULL_INJECTOR"
+  },
+  {
+    "name": "NULL_INJECTOR"
   },
   {
     "name": "NullInjector"
+  },
+  {
+    "name": "ObjectUnsubscribedErrorImpl"
   },
   {
     "name": "Optional"
@@ -39,6 +81,9 @@
     "name": "R3Injector"
   },
   {
+    "name": "SOURCE"
+  },
+  {
     "name": "ScopedService"
   },
   {
@@ -48,13 +93,19 @@
     "name": "SkipSelf"
   },
   {
-    "name": "THROW_IF_NOT_FOUND"
+    "name": "StaticInjector"
   },
   {
-    "name": "USE_VALUE$1"
+    "name": "USE_VALUE"
+  },
+  {
+    "name": "UnsubscriptionErrorImpl"
   },
   {
     "name": "_THROW_IF_NOT_FOUND"
+  },
+  {
+    "name": "__forward_ref__"
   },
   {
     "name": "__read"
@@ -64,6 +115,12 @@
   },
   {
     "name": "_currentInjector"
+  },
+  {
+    "name": "catchInjectorError"
+  },
+  {
+    "name": "computeDeps"
   },
   {
     "name": "couldBeInjectableType"
@@ -81,10 +138,19 @@
     "name": "defineInjector"
   },
   {
+    "name": "formatError"
+  },
+  {
     "name": "forwardRef"
   },
   {
-    "name": "getClosureSafeProperty$1"
+    "name": "getClosureSafeProperty"
+  },
+  {
+    "name": "getInjectableDef"
+  },
+  {
+    "name": "getInjectorDef"
   },
   {
     "name": "getNullInjector"
@@ -102,7 +168,13 @@
     "name": "injectArgs"
   },
   {
-    "name": "injectableDefRecord"
+    "name": "injectInjectorOnly"
+  },
+  {
+    "name": "injectRootLimpMode"
+  },
+  {
+    "name": "injectableDefOrInjectorDefFactory"
   },
   {
     "name": "isExistingProvider"
@@ -126,15 +198,36 @@
     "name": "makeRecord"
   },
   {
+    "name": "multiProviderMixError"
+  },
+  {
+    "name": "providerToFactory"
+  },
+  {
     "name": "providerToRecord"
+  },
+  {
+    "name": "recursivelyProcessProviders"
   },
   {
     "name": "resolveForwardRef"
   },
   {
+    "name": "resolveProvider"
+  },
+  {
+    "name": "resolveToken"
+  },
+  {
     "name": "setCurrentInjector"
   },
   {
+    "name": "staticError"
+  },
+  {
     "name": "stringify"
+  },
+  {
+    "name": "tryResolveToken"
   }
 ]

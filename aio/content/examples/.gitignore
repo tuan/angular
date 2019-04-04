@@ -57,9 +57,13 @@ dist/
 
 # aot
 **/*.ngsummary.json
+upgrade-module/tsconfig-aot.json
 !rollup-config.js
+upgrade-module/rollup-config.js
 aot-compiler/**/*.d.ts
 aot-compiler/**/*.factory.d.ts
+upgrade-phonecat-2-hybrid/aot/**/*
+!upgrade-phonecat-2-hybrid/aot/index.html
 
 # i18n
 !i18n/src/systemjs-text-plugin.js
@@ -82,5 +86,12 @@ aot-compiler/**/*.factory.d.ts
 *stackblitz.no-link.html
 
 # ngUpgrade testing
+upgrade-phonecat-1-typescript/tsconfig-aot.json
+upgrade-phonecat-1-typescript/rollup-config.js
+upgrade-phonecat-3-final/tsconfig-aot.json
+upgrade-phonecat-3-final/rollup-config.js
 !upgrade-phonecat-*/**/karma.conf.js
 !upgrade-phonecat-*/**/karma-test-shim.js
+
+# schematics
+!schematics-for-libraries/projects/my-lib/package.json
